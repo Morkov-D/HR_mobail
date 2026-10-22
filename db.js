@@ -1,20 +1,22 @@
-/* IndexedDB: device-only cache of connection and personal snapshot. */
+/* Versioned IndexedDB storage for non-authoritative cached HR data. PINs are never saved. */
 'use strict';
-window.HRDB=(()=>{
+window.HRDB = (() => {
   let dbPromise;
-  const open=()=>dbPromise||=new Promise((resolve,reject)=>{
-    if(!('indexedDB' in window))return reject(new Error('IndexedDB не поддерживается'));
-    const q=indexedDB.open('hr-time-mobile',2);
-    q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains('kv'))q.result.createObjectStore('kv')};
-    q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);
+  const open = () => dbPromise ||= new Promise((resolve,reject) => {
+    if (!('indexedDB' in window)) return reject(new Error('IndexedDB не поддерживается'));
+    const req=indexedDB.open('hr-time-mobile',2);
+    req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('kv'))req.result.createObjectStore('kv');};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
   });
-  async function run(mode,key,value){
-    const db=await open();
-    return new Promise((resolve,reject)=>{
-      const tx=db.transaction('kv',mode),s=tx.objectStore('kv');
-      const q=mode==='readonly'?s.get(key):value===undefined?s.delete(key):s.put(value,key);
-      q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);tx.onerror=()=>reject(tx.error);
+  async function transact(mode,key,value){
+    const db=await open();return new Promise((resolve,reject)=>{
+      const tx=db.transaction('kv',mode),store=tx.objectStore('kv');
+      const req=mode==='readonly'?store.get(key):value===undefined?store.delete(key):store.put(value,key);
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+      tx.onerror=()=>reject(tx.error);
     });
   }
-  return {get:k=>run('readonly',k),set:(k,v)=>run('readwrite',k,v),del:k=>run('readwrite',k)};
+  return {get:key=>transact('readonly',key),set:(key,v)=>transact('readwrite',key,v),del:key=>transact('readwrite',key)};
 })();
