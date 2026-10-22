@@ -1,6 +1,6 @@
 {
-  "name": "QR Табель — сотрудник",
-  "short_name": "QR Табель",
+  "name": "HR Портал — сотрудник",
+  "short_name": "HR Портал",
   "description": "Учёт рабочего времени по QR-кодам",
   "lang": "ru-RU",
   "start_url": "./",
